@@ -5,7 +5,8 @@ import java.lang.reflect.*;
 public class Main {
     public static void main(String[] args) {
 //        lab1();
-        lab2();
+//        lab2();
+        lab3();
     }
 
     private static void lab1() {
@@ -83,28 +84,29 @@ public class Main {
 
     }
 
-    private void lab3() {
+    private static void lab3() {
+        Calculator calculator = new Calculator();
     }
 
-    private void lab4() {
+    private static void lab4() {
     }
 
-    private void lab5() {
+    private static void lab5() {
     }
 
-    private void lab6() {
+    private static void lab6() {
     }
 
-    private void lab7() {
+    private static void lab7() {
     }
 
-    private void lab8() {
+    private static void lab8() {
     }
 
-    private void lab9() {
+    private static void lab9() {
     }
 
-    private void lab10() {
+    private static void lab10() {
     }
 
     private static void consoleDevider() {
