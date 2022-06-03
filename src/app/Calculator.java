@@ -3,11 +3,16 @@ package app;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Stack;
 
 public class Calculator implements ActionListener {
-    HashMap<String, Integer> PRIORITIES = new HashMap<String, Integer>();
+    Stack<Character> operands = new Stack<>();
+    Stack<String> numbers = new Stack<>();
+    String expression = "";
+    String numberBuffer = "";
     JFrame frame;
     JTextField textfield;
     JButton[] numberButtons = new JButton[10];
@@ -17,13 +22,10 @@ public class Calculator implements ActionListener {
     JPanel panel;
     Font myFont = new Font("Ink Free", Font.BOLD, 30);
 
-    double num1 = 0, num2 = 0, result = 0;
+    String num1, num2, result = "0";
     char operator;
 
     public Calculator() {
-
-        this.setPriorities();
-
         frame = new JFrame("Calculator");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(420, 550);
@@ -119,7 +121,14 @@ public class Calculator implements ActionListener {
         }
 
         if (e.getSource() == equButton) {
-            textfield.setText(this.fillExpressionStack().pop());
+            fillExpressionStack();
+//            JOptionPane.showMessageDialog(null, expression, "Expression", JOptionPane.WARNING_MESSAGE);
+
+            textfield.setText(Double.toString(calculate()));
+            expression = "";
+            numbers.clear();
+            operands.clear();
+            numberBuffer = "";
         }
 
         if (e.getSource() == clrButton) {
@@ -127,67 +136,123 @@ public class Calculator implements ActionListener {
         }
     }
 
-    private void setPriorities() {
-        this.PRIORITIES.put("*", 2);
-        this.PRIORITIES.put("/", 2);
-        this.PRIORITIES.put("+", 1);
-        this.PRIORITIES.put("-", 1);
-        this.PRIORITIES.put("^", 3);
+    private int getPriority(char token) {
+        return switch (token) {
+            case '(' -> 1;
+            case ')' -> -1;
+            case '*' -> 3;
+            case '/' -> 3;
+            case '^' -> 4;
+            case '+' -> 2;
+            case '-' -> 2;
+            default -> 0;
+        };
     }
 
     //    private double calculate(){
 //
 //    }
-    private Stack<String> fillExpressionStack() {
-        String expression = textfield.getText();
-        String numberBuffer = "";
-        Character operandBuffer;
 
-        Stack<String> operands = new Stack<String>();
-        Stack<String> numbers = new Stack<String>();
-        Stack<String> expressionStack = new Stack<String>();
+    private void fillExpressionStack() {
+        String input = textfield.getText();
+        String sentence = "";
 
-        char[] chars = expression.toCharArray();
-
+        int priority;
         for (char symbol :
-                chars) {
-            if (this.isOperand(symbol)) {
+                input.toCharArray()) {
 
-                expressionStack.push(numberBuffer);
-                numberBuffer = "";
+            priority = getPriority(symbol);
 
-                if (operands.isEmpty()) {
-                    operands.push(Character.toString(symbol));
-                    continue;
-                }
+            if (priority == 0) sentence += Character.toString(symbol);
+            if (priority == 1) operands.push(symbol); //open brace
 
-                Integer priority = this.PRIORITIES.get(operands.lastElement());
+            if (priority > 1) {
 
-                if (priority != null) {
-                    String operand = operands.get(operands.size() - 2);
-                    Integer prevPriority = this.PRIORITIES.get(operand);
+                sentence += ",";
 
-                    if(operand != null && prevPriority <= priority){
-                        operands.push(operand);
-                        continue;
-                    }
-
-                    if(operand != null){
-                        expressionStack.push(operand);
-                        continue;
+                while (!operands.isEmpty()) {
+                    if (getPriority(operands.peek()) >= priority) {
+                        sentence += Character.toString(operands.pop()) + ",";
+                    } else {
+                        break;
                     }
                 }
+                operands.push(symbol);
             }
 
-            numberBuffer += Character.toString(symbol);
+            if (priority == -1) { //closed brace
+                while (getPriority(operands.peek()) != 1) {
+                    if(!sentence.startsWith(",")){
+                        sentence += ",";
+                    }
+                    sentence += Character.toString(operands.pop());
+                }
+                operands.pop();
+            }
         }
-        System.out.println(expressionStack);
-        return expressionStack;
+
+        while (!operands.isEmpty()) {
+            sentence += "," + Character.toString(operands.pop());
+        }
+
+        expression = trimLastComma(sentence.trim());
     }
 
-    private boolean isOperand(char symbol) {
-        Integer priority = this.PRIORITIES.get(Character.toString(symbol));
+    private double calculate() {
+        Stack<Double> calculator = new Stack<>();
 
-        return priority != null;
+        for (String exp:
+             expression.split(",")) {
+            if(isOperand(exp)){
+                Double b = calculator.pop();
+                Double a = calculator.pop();
+                calculator.push(execExpression(a,b,exp));
+                continue;
+            }
+            if(validateDouble(exp)){
+                calculator.push(Double.parseDouble(exp));
+                continue;
+            }
+            JOptionPane.showMessageDialog(null, "String given in.", "Expression", JOptionPane.ERROR_MESSAGE);
+        }
+        return calculator.pop();
+    }
+
+    private String trimLastComma(String str) {
+        if ((str == null || str.length() == 0)) {
+            return "";
+        }
+
+        if (str.charAt(str.length() - 1) == ',') {
+            return str.substring(0, str.length() - 1);
+        }
+        return str;
+    }
+
+    private boolean validateDouble(String str) {
+        if (str == null) {
+            return false;
+        }
+        try {
+            double d = Double.parseDouble(str);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isOperand(String str) {
+        return getPriority(str.charAt(str.length() - 1)) > 1;
+    }
+
+    private Double execExpression(Double a, Double b, String operand) {
+        return switch (operand) {
+            case "+" -> a + b;
+            case "-" -> a - b;
+            case "*" -> a * b;
+            case "/" -> a / b;
+            case "^" -> Math.pow(a, b);
+            default -> 0.0;
+        };
     }
 }

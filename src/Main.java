@@ -6,7 +6,7 @@ public class Main {
     public static void main(String[] args) {
 //        lab1();
 //        lab2();
-        lab3();
+//        lab3();
     }
 
     private static void lab1() {
